@@ -2,10 +2,144 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>WA Bot Tunnel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WA Bot Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1419;color:#e7e9ea;min-height:100vh}
+.header{background:#1d9bf0;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.header h1{font-size:1.4rem}
+.status-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px}
+.online{background:#00ba7c}.offline{background:#f4212e}
+.container{max-width:1200px;margin:0 auto;padding:2rem 1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-bottom:2rem}
+.card{background:#1a2332;border-radius:12px;padding:1.5rem;border:1px solid #2f3336}
+.card h2{font-size:1.1rem;margin-bottom:1rem;color:#1d9bf0}
+.stat{font-size:2rem;font-weight:bold;margin:0.5rem 0}
+.label{color:#71767b;font-size:0.85rem}
+.btn{background:#1d9bf0;color:#fff;border:none;padding:0.7rem 1.5rem;border-radius:8px;cursor:pointer;font-size:1rem;margin:0.25rem}
+.btn:hover{background:#1a8cd8}
+.btn:disabled{background:#333;cursor:not-allowed}
+.btn.danger{background:#f4212e}.btn.danger:hover{background:#d31a26}
+input,textarea,select{width:100%;padding:0.7rem;border-radius:8px;border:1px solid #2f3336;background:#0f1419;color:#e7e9ea;margin:0.5rem 0;font-size:1rem}
+.code-box{font-size:2.5rem;font-weight:bold;letter-spacing:0.3rem;text-align:center;background:#0f1419;padding:1.5rem;border-radius:8px;margin:1rem 0;font-family:monospace}
+.logs{background:#0a0e13;border-radius:8px;padding:1rem;height:300px;overflow-y:auto;font-family:monospace;font-size:0.8rem;white-space:pre-wrap}
+.tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.tab{background:#1a2332;border:1px solid #2f3336;color:#e7e9ea;padding:0.7rem 1.2rem;border-radius:8px;cursor:pointer}
+.tab.active{background:#1d9bf0;border-color:#1d9bf0}
+.section{display:none}.section.active{display:block}
+.config-row{display:flex;justify-content:space-between;align-items:center;padding:0.8rem 0;border-bottom:1px solid #2f3336}
+.toggle{position:relative;width:50px;height:26px;background:#333;border-radius:13px;cursor:pointer}
+.toggle.on{background:#00ba7c}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:3px;left:3px;transition:0.2s}
+.toggle.on::after{left:27px}
+</style>
 </head>
 <body>
-<h1>WA Bot Tunnel</h1>
-<p>Tunnel for WhatsApp bot panel.</p>
+<div class="header">
+<div><h1>🤖 WA Bot Panel</h1></div>
+<div><span class="status-dot" id="statusDot"></span><span id="statusText">Menghubungkan...</span></div>
+</div>
+<div class="container">
+<div class="tabs">
+<button class="tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+<button class="tab" onclick="showTab('pairing')">🔗 Pairing</button>
+<button class="tab" onclick="showTab('send')">💬 Kirim Pesan</button>
+<button class="tab" onclick="showTab('logs')">📝 Logs</button>
+</div>
+
+<div id="dashboard" class="section active">
+<div class="grid">
+<div class="card"><h2>Status Koneksi</h2><div class="stat" id="connStat">-</div><div class="label" id="uptimeLabel">Uptime: -</div></div>
+<div class="card"><h2>Status Terpantau</h2><div class="stat" id="statusCount">-</div><div class="label">status dari kontak</div></div>
+<div class="card"><h2>Antrean</h2><div class="stat" id="pendingCount">-</div><div class="label">menunggu diproses</div></div>
+</div>
+<div class="card"><h2>⚙️ Fitur</h2>
+<div class="config-row"><span>📥 TikTok Downloader (HD, tanpa WM)</span><div class="toggle on" id="t1" onclick="toggle(this)"></div></div>
+<div class="config-row"><span>👁️ Auto-lihat Status</span><div class="toggle on" id="t2" onclick="toggle(this)"></div></div>
+<div class="config-row"><span>🎨 Gambar AI (/gambar)</span><div class="toggle on" id="t3" onclick="toggle(this)"></div></div>
+<div class="config-row"><span>💬 Chat AI</span><div class="toggle" id="t4" onclick="toggle(this)"></div></div>
+<p style="margin-top:1rem;color:#71767b;font-size:0.85rem">Catatan: toggle hanya tampilan. Untuk ubah permanen, edit index.mjs lalu restart bot.</p>
+</div>
+</div>
+
+<div id="pairing" class="section">
+<div class="card"><h2>🔗 Kode Pairing WhatsApp</h2>
+<p style="color:#71767b;margin-bottom:1rem">Masukkan kode ini di WhatsApp → Perangkat Tertaut → Tautkan dengan nomer telepon</p>
+<div class="code-box" id="pairCode">-</div>
+<p style="text-align:center;color:#71767b" id="codeAge"></p>
+<div style="text-align:center"><button class="btn" onclick="newCode()" id="newCodeBtn">🔄 Kode Baru</button></div>
+</div>
+</div>
+
+<div id="send" class="section">
+<div class="card"><h2>💬 Kirim Pesan WhatsApp</h2>
+<label>JID Tujuan (contoh: 62812xxxx@s.whatsapp.net)</label>
+<input type="text" id="sendJid" placeholder="62812xxxx@s.whatsapp.net">
+<label>Pesan</label>
+<textarea id="sendText" rows="4" placeholder="Tulis pesan..."></textarea>
+<button class="btn" onclick="sendMsg()">📤 Kirim</button>
+<p id="sendResult" style="margin-top:1rem"></p>
+</div>
+</div>
+
+<div id="logs" class="section">
+<div class="card"><h2>📝 Log Bot (100 baris terakhir)</h2>
+<div class="logs" id="logBox">Memuat...</div>
+<div style="margin-top:1rem"><button class="btn" onclick="loadLogs()">🔄 Refresh</button></div>
+</div>
+</div>
+</div>
+
+<script>
+const API = ''; // kosong = same origin; isi URL bot jika panel di-host terpisah
+function showTab(id){
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+event.target.classList.add('active');
+document.getElementById(id).classList.add('active');
+if(id==='logs') loadLogs();
+}
+function toggle(el){ el.classList.toggle('on'); }
+async function refreshState(){
+try{
+const r = await fetch(API+'/api/state'); const d = await r.json();
+const dot = document.getElementById('statusDot'), txt = document.getElementById('statusText');
+if(d.connected){ dot.className='status-dot online'; txt.textContent='Terhubung'; }
+else{ dot.className='status-dot offline'; txt.textContent='Terputus'; }
+if(d.code){
+document.getElementById('pairCode').textContent = d.code.replace(/(.{4})/,'$1-');
+const age = Math.floor((Date.now()-d.codeAt)/1000);
+document.getElementById('codeAge').textContent = 'Umur kode: '+age+' detik (kedaluwarsa ~2 menit)';
+} else { document.getElementById('pairCode').textContent = d.registered ? '✅ Sudah tertaut' : '-'; document.getElementById('codeAge').textContent=''; }
+const s = await (await fetch(API+'/api/stats')).json();
+document.getElementById('connStat').textContent = s.connected ? '✅ Online' : '❌ Offline';
+document.getElementById('uptimeLabel').textContent = 'Uptime: '+Math.floor(s.uptime/60)+' menit';
+document.getElementById('statusCount').textContent = s.statusCount;
+document.getElementById('pendingCount').textContent = s.pendingCount;
+}catch(e){ document.getElementById('statusText').textContent='Error: '+e.message; }
+}
+async function newCode(){
+const btn=document.getElementById('newCodeBtn'); btn.disabled=true;
+try{ const r=await fetch(API+'/api/new-code',{method:'POST'}); const d=await r.json();
+if(d.code) alert('Kode baru: '+d.code); else alert('Error: '+(d.error||'gagal'));
+}catch(e){ alert('Error: '+e.message); }
+btn.disabled=false; refreshState();
+}
+async function loadLogs(){
+try{ const r=await fetch(API+'/api/logs'); const d=await r.json();
+document.getElementById('logBox').textContent=d.logs||'(kosong)'; }catch(e){
+document.getElementById('logBox').textContent='Error: '+e.message; }
+}
+async function sendMsg(){
+const jid=document.getElementById('sendJid').value.trim(), text=document.getElementById('sendText').value.trim();
+if(!jid||!text){ alert('Isi JID dan pesan!'); return; }
+try{ const r=await fetch(API+'/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jid,text})});
+const d=await r.json();
+document.getElementById('sendResult').textContent = d.ok ? '✅ Terkirim!' : '❌ '+(d.error||'gagal');
+}catch(e){ document.getElementById('sendResult').textContent='❌ '+e.message; }
+}
+refreshState(); setInterval(refreshState, 10000);
+</script>
 </body>
 </html>
