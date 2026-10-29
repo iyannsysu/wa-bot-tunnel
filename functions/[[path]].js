@@ -47,7 +47,7 @@ export async function onRequest({ request, env }) {
       }
       return new Response(body, { status: row.status_code, headers: resHeaders });
     }
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 150));
   }
 
   await env.DB.prepare("DELETE FROM tunnel_requests WHERE id=?").bind(id).run();

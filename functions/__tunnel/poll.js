@@ -27,6 +27,6 @@ export async function onRequestPost({ request, env }) {
       return Response.json({ requests: rows.results });
     }
     if (Date.now() >= deadline) return Response.json({ requests: [] });
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 250));
   }
 }
